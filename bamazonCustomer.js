@@ -1,42 +1,83 @@
 var mysql = require("mysql");
 var inquirer = require("inquirer");
+var Table = require("cli-table");
 
+//originally made a table, but it wasn't easy to capture user choices within it.  Looked nice!
 // create the connection information for the sql database
 var connection = mysql.createConnection({
   host: "localhost",
   port: 3306,
 
-  // Your username
   user: "root",
 
-  // Your password
+
   password: "",
   database: "bamazon"
 });
 
-// connect to the mysql server and sql database
 connection.connect(function(err) {
   if (err) throw err;
-  console.log("You're Connected!");
 
-  start();
-
-  // run the start function after the connection is made to prompt the user
-  // start();
 });
 
-function start(){
-connection.query("SELECT * FROM products", function(err, res) {
-  if (err) throw err;
-  console.log(res);
+  function start(){
+  connection.query("SELECT * FROM products", function(err, res) {
+    if (err) throw err;
+ 
+        inquirer.prompt([
+           {
+      name: "productId",
+      type: "list",
+      message: "What absolutely fire product would you like to buy? [Select an item with arrow keys]",
+      choices: function(){
+        var choices =[];
+          for (var i = 0; i < res.length; i++) {
+              choices.push(res[i].id+": " +res[i].product_name+ " $" +res[i].price + res[i].stock_quantity)
+          }
+        return choices
+      }
+    },
+            {
+              type: "number",
+              message: "Just how many of that special thing would you like? [Enter a quantity, please]",
+              name: "amount",
+              when: function(answers){
+              return answers.id
+            }
+            },
+        ]).then(function(answers) {
+              var inStockAmount;
+              var newProdQuant;
+              var pricePer;
+              var selectedItem = answers.id;
+              var amountAsked = answers.number;
+              var totalPrice;
+              
 
-  // inquirer.prompt({
-  //     name: "listItems",
-  //     type: "list",
-  //     message: "Check out all our dope items for sale!"
-  //     choices
+    connection.query("SELECT * FROM products WHERE ?", [{id: selectedItem}],function(error, res){
+          if (error) throw error;
+      inStockAmount = parseInt(res.stock_quantity);
+      newProdQuant = inStockAmount - amountAsked;
+      pricePer = parseInt(res.price);
+      totalPrice = amountAsked * pricePer;
+    
+      if (inStockAmount >= amountAsked){
+        console.log("We got you!");
+        connection.query(
+                "UPDATE products SET ? WHERE ?", [{id: selectedItem}, {stock_quantity: newProdQuant}],function(error) {
+                  if (error) throw error;
+        });   
+      
 
-  // })
-  });
-}
+      // else {
+      //   console.log("We don't have enough of that to fit your gigantic needs!");
+      // }
+          
+         
+        }; 
+      });
+    });
+});
+};
+start();
 
