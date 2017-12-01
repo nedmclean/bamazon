@@ -32,7 +32,7 @@ connection.connect(function(err) {
       choices: function(){
         var choices =[];
           for (var i = 0; i < res.length; i++) {
-              choices.push(res[i].id+": " +res[i].product_name+ " $" +res[i].price + res[i].stock_quantity)
+              choices.push(res[i].id+": " +res[i].product_name+ " $" +res[i].price.toFixed(2) + res[i].stock_quantity)
           }
         return choices
       }
@@ -41,11 +41,14 @@ connection.connect(function(err) {
               type: "number",
               message: "Just how many of that special thing would you like? [Enter a quantity, please]",
               name: "amount",
-              when: function(answers){
+              when: function(userInput){
               return answers.id
             }
             },
-        ]).then(function(answers) {
+        ]).then(function(userInput) {
+             
+
+
               var inStockAmount;
               var newProdQuant;
               var pricePer;
@@ -56,9 +59,9 @@ connection.connect(function(err) {
 
     connection.query("SELECT * FROM products WHERE ?", [{id: selectedItem}],function(error, res){
           if (error) throw error;
-      inStockAmount = parseInt(res.stock_quantity);
+      inStockAmount = parseInt(res[0].stock_quantity);
       newProdQuant = inStockAmount - amountAsked;
-      pricePer = parseInt(res.price);
+      pricePer = parseInt(res[0].price);
       totalPrice = amountAsked * pricePer;
     
       if (inStockAmount >= amountAsked){
@@ -69,9 +72,9 @@ connection.connect(function(err) {
         });   
       
 
-      // else {
-      //   console.log("We don't have enough of that to fit your gigantic needs!");
-      // }
+      else {
+        console.log("We don't have enough of that to fit your gigantic needs!");
+      }
           
          
         }; 
